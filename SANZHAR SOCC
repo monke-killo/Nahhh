@@ -1,0 +1,182 @@
+import sys
+import json
+import os
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QLineEdit, QPushButton, QComboBox, QLabel
+from PyQt5.QtCore import Qt
+
+app = QApplication([])
+window = QWidget()
+window.setWindowTitle("TaskFlow")
+window.resize(700, 500)
+
+if os.path.exists("savepapa.json"):
+    with open("savepapa.json", "r", encoding="utf-8") as f:
+        r34 = json.load(f)
+else:
+    r34 = []
+
+shalom = QLineEdit()
+shalom.setPlaceholderText("Название задачи...")
+bibo = QPushButton("Добавить задачу")
+damm = QLineEdit()
+damm.setPlaceholderText("Поиск...")
+
+list_tasks = QListWidget()
+
+btn_complete = QPushButton("Выполнено")
+btn_edit = QPushButton("Редактировать")
+btn_delete = QPushButton("Удалить")
+
+filter_combo = QComboBox()
+filter_combo.addItems(["Все задачи", "Только выполненные", "Только невыполненные"])
+ihatecs = QLabel("Всего задач: 0")
+
+layyy = QVBoxLayout()
+top_layout = QHBoxLayout()
+central_layout = QHBoxLayout()
+right_layout = QVBoxLayout()
+bottom_layout = QHBoxLayout()
+
+top_layout.addWidget(QLabel("Новая задача:"))
+top_layout.addWidget(shalom)
+top_layout.addWidget(bibo)
+top_layout.addWidget(QLabel("Поиск:"))
+top_layout.addWidget(damm)
+
+right_layout.addWidget(btn_complete)
+right_layout.addWidget(btn_edit)
+right_layout.addWidget(btn_delete)
+
+central_layout.addWidget(list_tasks)
+central_layout.addLayout(right_layout)
+
+bottom_layout.addWidget(QLabel("Фильтр:"))
+bottom_layout.addWidget(filter_combo)
+bottom_layout.addWidget(ihatecs)
+
+layyy.addLayout(top_layout)
+layyy.addLayout(central_layout)
+layyy.addLayout(bottom_layout)
+window.setLayout(layyy)
+
+window.setStyleSheet("""
+    QWidget {
+        background-color: #9FCDE4; 
+    }
+    QLabel {
+        color: black;
+        font-family: 'MS Sans Serif', 'Arial';
+        font-weight: bold; 
+        font-size: 14px;
+        background-color: transparent;
+    }
+    QListWidget {
+        background-color: white;
+        color: black;
+        font-size: 14px;
+    }
+    QLineEdit, QComboBox {
+        background-color: white;
+        color: black;
+        padding: 5px;
+    }
+    QPushButton {
+        background-color: #C0C0C0;
+        border: 3px solid;
+        border-color: #FFFFFF #808080 #808080 #FFFFFF;
+        color: black;
+        font-family: 'MS Sans Serif', 'Arial';
+        font-size: 12px;
+        padding: 8px;
+    }
+    QPushButton:pressed {
+        border-color: #808080 #FFFFFF #FFFFFF #808080;
+        padding-top: 10px;
+        padding-left: 10px;
+    }
+""")
+
+def saveeeeessssssssssssssssssss():
+    with open("savepapa.json", "w", encoding="utf-8") as f:
+        json.dump(r34, f, ensure_ascii=False, indent=4)
+
+def display_tasks():
+    list_tasks.clear()
+    search_text = damm.text().lower()
+    filter_type = filter_combo.currentText()
+    completed_count = 0
+
+    for task in r34:
+        title = task["title"]
+        is_done = task["done"]
+
+        if is_done:
+            completed_count += 1
+
+        if search_text and search_text not in title.lower():
+            continue
+
+        if filter_type == "Только выполненные" and not is_done:
+            continue
+        if filter_type == "Только невыполненные" and is_done:
+            continue
+
+        status = "[X] Выполнено" if is_done else "[ ] Не выполнено"
+        list_tasks.addItem(f"{title}  ---  {status}")
+
+    ihatecs.setText(f"Всего задач: {len(r34)} | Выполнено: {completed_count}")
+
+def add_task():
+    text = shalom.text().strip()
+    if text != "":
+        new_task = {"title": text, "done": False}
+        r34.append(new_task)
+        shalom.clear()
+        saveeeeessssssssssssssssssss()
+        display_tasks()
+
+def change_status():
+    if list_tasks.currentItem():
+        current_text = list_tasks.currentItem().text()
+        for task in r34:
+            if current_text.startswith(task["title"]):
+                task["done"] = not task["done"]
+                break
+        saveeeeessssssssssssssssssss()
+        display_tasks()
+
+def edit_task():
+    if list_tasks.currentItem():
+        current_text = list_tasks.currentItem().text()
+        new_text = shalom.text().strip()
+        for task in r34:
+            if current_text.startswith(task["title"]):
+                if new_text != "":
+                    task["title"] = new_text
+                    shalom.clear()
+                else:
+                    shalom.setText(task["title"])
+                break
+        saveeeeessssssssssssssssssss()
+        display_tasks()
+
+def delete_task():
+    if list_tasks.currentItem():
+        current_text = list_tasks.currentItem().text()
+        for task in r34:
+            if current_text.startswith(task["title"]):
+                r34.remove(task)
+                break
+        saveeeeessssssssssssssssssss()
+        display_tasks()
+
+bibo.clicked.connect(add_task)
+btn_complete.clicked.connect(change_status)
+btn_edit.clicked.connect(edit_task)
+btn_delete.clicked.connect(delete_task)
+damm.textChanged.connect(display_tasks)
+filter_combo.currentIndexChanged.connect(display_tasks)
+
+display_tasks()
+window.show()
+app.exec()
