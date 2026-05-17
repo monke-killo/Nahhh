@@ -1,0 +1,116 @@
+import sys
+import json
+import os
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
+
+
+class Clicker(QWidget):
+    def __init__(self):
+        super().__init__()
+        if os.path.exists("save.json"):
+            with open("save.json", "r") as f:
+                data = json.load(f)
+                self.scoreHITRUFANOV = data.get("score", 0)
+                self.clickpwoer = data.get("power", 1)
+                self.upgrade_count = data.get("upgrade_count", 1)
+        else:
+            self.scoreHITRUFANOV = 0
+            self.clickpwoer = 1
+            self.upgrade_count = 1
+
+        self.design_tipo()
+        self.setWindowTitle("Clicker")
+        self.resize(512, 384)
+
+        self.check_win()
+
+    def saveeeeessssssssssssssssssss(self):
+        data = {"score": self.scoreHITRUFANOV,
+                "power": self.clickpwoer,
+                "upgrade_count": self.upgrade_count, }
+        with open("save.json", "w") as f:
+            json.dump(data, f)
+
+    def click(self):
+        self.scoreHITRUFANOV += self.clickpwoer
+        self.label.setText(str(f"Score: {self.scoreHITRUFANOV}"))
+        self.label2.setText(f"Multiplication: {self.upgrade_count}")
+        self.saveeeeessssssssssssssssssss()
+        self.check_win()
+
+    def upgrade(self):
+        if self.scoreHITRUFANOV >= 50 * self.upgrade_count:
+            self.scoreHITRUFANOV -= 50 * self.upgrade_count
+            self.upgrade_count *= 2
+            self.clickpwoer *= 2
+            self.label.setText(f"Score: {self.scoreHITRUFANOV}")
+            self.label2.setText(f"Multiplication: {self.upgrade_count}")
+            self.btn2.setText(f"Upgrade (Cost: {self.upgrade_count * 50})")
+            self.saveeeeessssssssssssssssssss()
+            self.check_win()
+
+    def check_win(self):
+        if self.scoreHITRUFANOV >= 10000:
+            self.goal_label.hide()
+            self.label.hide()
+            self.label2.hide()
+            self.btn.hide()
+            self.btn2.hide()
+            self.win_label.show()
+
+    def design_tipo(self):
+        self.goal_label = QLabel("Goal: 10k", self)
+        self.label = QLabel(f"Score: {self.scoreHITRUFANOV}", self)
+        self.label2 = QLabel(f"Multiplication: {self.upgrade_count}")
+        self.btn = QPushButton("TAP", self)
+        self.btn2 = QPushButton(f"Upgrade (Cost: {self.upgrade_count * 50})")
+
+        self.win_label = QLabel("You've won!", self)
+        self.win_label.hide()
+
+        self.btn.clicked.connect(self.click)
+        self.btn2.clicked.connect(self.upgrade)
+        layyy = QVBoxLayout()
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #9FCDE4; 
+            }
+            QLabel {
+                color: black;
+                font-family: 'MS Sans Serif', 'Arial';
+                font-weight: bold; 
+                font-size: 20px;
+                background-color: transparent;
+            }
+            QPushButton {
+                background-color: #C0C0C0;
+                border: 3px solid;
+                border-color: #FFFFFF #808080 #808080 #FFFFFF;
+                color: black;
+                font-family: 'MS Sans Serif', 'Arial';
+                font-size: 12px;
+                padding: 10px;
+            }
+            QPushButton:pressed {
+                border-color: #808080 #FFFFFF #FFFFFF #808080;
+                padding-top: 12px;
+                padding-left: 12px;
+            }
+        """)
+        layyy.addWidget(self.goal_label, alignment=Qt.AlignCenter)
+        layyy.addWidget(self.label, alignment=Qt.AlignCenter)
+        layyy.addWidget(self.label2, alignment=Qt.AlignCenter)
+        layyy.addWidget(self.btn, alignment=Qt.AlignCenter)
+        layyy.addWidget(self.btn2, alignment=Qt.AlignCenter)
+        layyy.addWidget(self.win_label, alignment=Qt.AlignCenter)
+
+        self.setLayout(layyy)
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = Clicker()
+    ex.show()
+    sys.exit(app.exec_())
