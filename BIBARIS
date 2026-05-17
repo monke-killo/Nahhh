@@ -1,0 +1,229 @@
+import sys,json
+
+from PyQt5.QtWidgets import(
+    QApplication,QWidget,QVBoxLayout,QHBoxLayout,
+    QGridLayout,QLineEdit,QPushButton,QListWidget,
+    QLabel,QComboBox,QMessageBox,QInputDialog
+)
+
+# шалом
+
+class Okno(QWidget):
+    def init(self):
+        super().init()
+
+        self.zadachi=[]
+        self.file="tasks.json"
+
+        self.init_ui()
+        self.load_json()
+        self.show_tasks()
+
+    def init_ui(self):
+        self.setWindowTitle("TaskFlow")
+        self.resize(700,500)
+
+        mega_layout=QVBoxLayout()
+
+        top_layout=QGridLayout()
+
+        self.line=QLineEdit()
+        self.line.setPlaceholderText("Введите задачу")
+
+        self.add_btn=QPushButton("Добавить задачу")
+        self.add_btn.clicked.connect(self.add_task)
+
+        self.search=QLineEdit()
+        self.search.setPlaceholderText("Поиск")
+        self.search.textChanged.connect(self.show_tasks)
+
+        top_layout.addWidget(self.line,0,0)
+        top_layout.addWidget(self.add_btn,0,1)
+        top_layout.addWidget(self.search,1,0,1,2)
+
+        center_layout=QHBoxLayout()
+
+        self.list_widget=QListWidget()
+
+        right_layout=QVBoxLayout()
+
+        self.done_btn=QPushButton("Выполнено")
+        self.done_btn.clicked.connect(self.done_task)
+
+        self.edit_btn=QPushButton("Редактировать")
+        self.edit_btn.clicked.connect(self.edit_task)
+
+        self.delete_btn=QPushButton("Удалить")
+        self.delete_btn.clicked.connect(self.delete_task)
+
+        right_layout.addWidget(self.done_btn)
+        right_layout.addWidget(self.edit_btn)
+        right_layout.addWidget(self.delete_btn)
+        right_layout.addStretch()
+
+        center_layout.addWidget(self.list_widget)
+        center_layout.addLayout(right_layout)
+
+        bottom_layout=QHBoxLayout()
+
+        self.combo=QComboBox()
+
+        self.combo.addItems([
+            "Все",
+            "Выполненные",
+            "Невыполненные"
+        ])
+
+        self.combo.currentTextChanged.connect(self.show_tasks)
+
+        self.info=QLabel("Количество задач: 0")
+
+        bottom_layout.addWidget(self.combo)
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(self.info)
+
+        mega_layout.addLayout(top_layout)
+        mega_layout.addLayout(center_layout)
+        mega_layout.addLayout(bottom_layout)
+
+        self.setLayout(mega_layout)
+
+    def add_task(self):
+        text=self.line.text().strip()
+
+        if text=="":
+            QMessageBox.warning(self,"Ошибка","Введите задачу")
+            return
+
+        tema={
+            "title":text,
+            "done":False
+        }
+
+        self.zadachi.append(tema)
+
+        self.line.clear()
+
+        self.save_json()
+        self.show_tasks()
+
+    def show_tasks(self):
+        self.list_widget.clear()
+
+        poisk=self.search.text().lower()
+        filter_name=self.combo.currentText()
+
+        count=0
+
+        for task in self.zadachi:
+
+            nazvanie=task["title"]
+            gotov=task["done"]
+
+            if poisk not in nazvanie.lower():
+                continue
+
+            if filter_name=="Выполненные" and not gotov:
+                continue
+
+            if filter_name=="Невыполненные" and gotov:
+                continue
+
+            status="✔️ Выполнено" if gotov else "✘ Не выполнено"
+
+            self.list_widget.addItem(f"{nazvanie} — {status}")
+
+            count+=1
+
+        self.info.setText(f"Количество задач: {count}")
+
+    def get_index(self):
+        row=self.list_widget.currentRow()
+
+        if row==-1:
+            return None
+
+        poisk=self.search.text().lower()
+        filter_name=self.combo.currentText()
+
+        massive=[]
+
+        for i,task in enumerate(self.zadachi):
+
+            nazvanie=task["title"]
+            gotov=task["done"]
+
+            if poisk not in nazvanie.lower():
+                continue
+
+            if filter_name=="Выполненные" and not gotov:
+                continue
+
+            if filter_name=="Невыполненные" and gotov:
+                continue
+
+            massive.append(i)
+
+        return massive[row]
+
+    def done_task(self):
+        index=self.get_index()
+        if index is None:
+            return
+
+        self.zadachi[index]["done"] = not self.zadachi[index]["done"]
+
+        self.save_json()
+        self.show_tasks()
+
+    def edit_task(self):
+        index = self.get_index()
+
+        if index is None:
+            return
+
+        old_text = self.zadachi[index]["title"]
+
+        new_text, ok = QInputDialog.getText(
+            self,
+            "Редактирование",
+            "Измените задачу:",
+            text=old_text
+        )
+
+        if ok and new_text.strip() != "":
+            self.zadachi[index]["title"] = new_text.strip()
+
+            self.save_json()
+            self.show_tasks()
+
+    def delete_task(self):
+        index = self.get_index()
+
+        if index is None:
+            return
+
+        del self.zadachi[index]
+
+        self.save_json()
+        self.show_tasks()
+
+    def save_json(self):
+        with open(self.file, "w", encoding="utf-8") as f:
+            json.dump(self.zadachi, f, ensure_ascii=False, indent=4)
+
+    def load_json(self):
+        try:
+            with open(self.file, "r", encoding="utf-8") as f:
+                self.zadachi = json.load(f)
+
+        except FileNotFoundError:
+            self.zadachi = []
+
+app = QApplication(sys.argv)
+
+okno = Okno()
+okno.show()
+
+sys.exit(app.exec_())
+
